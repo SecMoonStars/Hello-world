@@ -1,0 +1,219 @@
+#include <iostream>
+#include <vector>
+#include<stdio.h>
+
+using namespace std;
+
+// 定义资源的数量
+const int NUMBER_OF_RESOURCES = 4;
+// 定义进程的数量
+const int NUMBER_OF_PROCESSES = 5;
+
+// 定义银行家算法的数据结构
+struct BankerAlgorithm {
+    // 可利用资源向量
+    vector<int> available;
+    // 最大需求矩阵
+    vector<vector<int>> max;
+    // 分配矩阵
+    vector<vector<int>> allocation;
+    // 需求矩阵
+    vector<vector<int>> need;
+
+    // 初始化数据结构
+    BankerAlgorithm(vector<int> avail, vector<vector<int>> mx, vector<vector<int>> alloc)
+        : available(avail), max(mx), allocation(alloc) {
+        // 初始化需求矩阵
+        for (int i = 0; i < NUMBER_OF_PROCESSES; ++i) {
+            vector<int> temp;
+            for (int j = 0; j < NUMBER_OF_RESOURCES; ++j) {
+                temp.push_back(max[i][j] - allocation[i][j]);
+            }
+            need.push_back(temp);
+        }
+    }
+
+    // 银行家算法的安全性检查
+    bool isSafe() {
+        vector<bool> finish(NUMBER_OF_PROCESSES, false);
+        vector<int> work(available);
+        vector<int> safeSequence;//安全序列
+
+        int count = 0;//成功分配进程数量
+        while (count < NUMBER_OF_PROCESSES) {//没有分配完
+            bool found = false;//能否找到一个进程满足need资源数量小于等于available
+            for (int i = 0; i < NUMBER_OF_PROCESSES; ++i) {//搜索每一个进程
+                if (!finish[i]) {//如果该进程没有被分配
+                    bool canAllocate = true;//确认是否存在可以分配
+                    for (int j = 0; j < NUMBER_OF_RESOURCES; ++j) {//对于该进程确认是否每个需求资源均小于可分配资源
+                        if (need[i][j] > work[j]) {
+                            canAllocate = false;
+                            break;//不是则查找下一个
+                        }
+                    }
+
+                    if (canAllocate) {//当前进程可以分配
+                        for (int j = 0; j < NUMBER_OF_RESOURCES; ++j) {
+                            work[j] += allocation[i][j];//将该进程的资源分配完，释放，更新可用资源
+                        }
+                        safeSequence.push_back(i);//加入安全序列
+                        finish[i] = true;//更新已释放进程
+                        found = true;//找到了
+                        count++;//更新成功分配进程
+                    }
+                }
+            }
+
+            if (!found) {
+                break;//当前已经没有可以分配的进程，出现死锁
+            }
+        }
+
+        return count == NUMBER_OF_PROCESSES;
+    }
+
+    bool safe(int number, vector<int> resources)
+    {
+        
+        vector<bool> finish(NUMBER_OF_PROCESSES, false);
+        vector<int> work(available);//可用资源
+        vector<int> safeSequence;//安全序列
+
+        if (!ifAllocation(number, resources, work))
+        {
+            cout << "分配失败" << endl;
+            return false;
+        }
+        finish[number] = true;
+        safeSequence.push_back(number);//若分配成功则装入正确的序列
+
+        int count = 0;//成功分配进程数量
+        while (count < NUMBER_OF_PROCESSES-1) {//没有分配完
+            bool found = false;//能否找到一个进程满足need资源数量小于等于available
+            for (int i = 0; i < NUMBER_OF_PROCESSES; ++i) {//搜索每一个进程
+                if (!finish[i]) {//如果该进程没有被分配
+                    bool canAllocate = true;//确认是否存在可以分配
+                    for (int j = 0; j < NUMBER_OF_RESOURCES; ++j) {//对于该进程确认是否每个需求资源均小于可分配资源
+                        if (need[i][j] > work[j]) {
+                            canAllocate = false;
+                            break;//不是则查找下一个
+                        }
+                    }
+
+                    if (canAllocate) {//当前进程可以分配
+                        for (int j = 0; j < NUMBER_OF_RESOURCES; ++j) {
+                            work[j] += allocation[i][j];//将该进程的资源分配完，释放，更新可用资源
+                        }
+                        safeSequence.push_back(i);//加入安全序列
+                        finish[i] = true;//更新已释放进程
+                        found = true;//找到了
+                        count++;//更新成功分配进程
+                    }
+                }
+            }
+
+            if (!found) {
+                for (auto x : safeSequence)
+                    cout << x << " ";
+                break;//当前已经没有可以分配的进程，出现死锁
+            }
+        }
+
+        for (auto x : safeSequence)
+            cout << x << " ";
+        puts("");
+        return count == NUMBER_OF_PROCESSES-1;
+    }
+
+    void printf()
+    {
+        cout << "资源分配情况" << endl;
+        for (int i = 0; i < NUMBER_OF_PROCESSES; ++i)
+        {
+            cout << "P" << i << ": ";
+            for (int j = 0; j < NUMBER_OF_RESOURCES; ++j)
+                cout << allocation[i][j]<<' ';
+            puts("");
+        }
+
+        puts("");
+        cout << "剩余可分配资源：";
+        for (int j = 0; j < NUMBER_OF_RESOURCES; ++j)
+            cout << available[j] << ' ';
+        puts("");
+    }
+
+    bool ifAllocation(int number, vector<int> resources, vector<int>& work)
+    {
+        bool canAllocate = true;//确认是否存在可以分配
+        for (int j = 0; j < NUMBER_OF_RESOURCES; ++j) {//对于该进程确认是否每个需求资源均小于可分配资源
+            if (resources[j] > work[j]) {
+                canAllocate = false;
+                break;
+            }
+        }
+
+        if (canAllocate)
+        {
+            for (int j = 0; j < NUMBER_OF_RESOURCES; ++j) {
+                work[j] += allocation[number][j];//将该进程的资源分配完，释放，更新可用资源
+            }
+        }
+
+        return canAllocate;
+    }
+};
+
+
+    
+
+int main() {
+    
+
+
+    // 初始化资源向量
+    vector<int> available = { 1, 2, 2, 2 };
+    // 初始化最大需求矩阵
+    vector<vector<int>> max = { {2, 0, 1, 1}, {0, 1, 2, 1}, {4, 0, 0, 0}, {0, 2, 1, 0}, {1, 0, 3, 0} };
+    // 初始化分配矩阵
+    vector<vector<int>> allocation = { {1, 2, 0, 3}, {0, 1, 3, 1}, {1, 1, 0, 2}, {1, 3, 2, 0}, {2, 0, 1, 3} };
+    // 创建银行家算法实例
+
+
+    /*
+    vector<int> available(NUMBER_OF_RESOURCES);
+    vector<vector<int>> max(NUMBER_OF_PROCESSES, vector<int>(NUMBER_OF_RESOURCES));
+    vector<vector<int>> allocation(NUMBER_OF_PROCESSES, vector<int>(NUMBER_OF_RESOURCES));
+
+    for (int i = 0; i < NUMBER_OF_PROCESSES; ++i)
+    for (int j = 0; j < NUMBER_OF_RESOURCES; ++j)
+        cin >> max[i][j];
+
+    for (int i = 0; i < NUMBER_OF_PROCESSES; ++i)
+    for (int j = 0; j < NUMBER_OF_RESOURCES; ++j)
+        cin >> allocation[i][j];
+
+    for (int j = 0; j < NUMBER_OF_RESOURCES; ++j)
+    cin >> available[j];
+    */
+
+    BankerAlgorithm banker(available, max, allocation);
+
+
+    int num ;
+    printf("请输入进程号，和申请的资源:\n");
+    cin >> num;
+    vector<int> allc(NUMBER_OF_RESOURCES);
+    for (int i = 0; i < NUMBER_OF_RESOURCES; i++)
+        cin >> allc[i];
+    
+    
+    // 检查是否处于安全状态
+    if (banker.safe(num,allc)) {
+        cout << "System is in safe state." << endl;
+    }
+    else {
+        cout << "System is not in safe state." << endl;
+    }
+    return 0;
+}
